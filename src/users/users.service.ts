@@ -11,9 +11,19 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
-  async findOne(userId: number): Promise<UserDocument> {
+  async findById(id: string): Promise<UserDocument> {
+    this.logger.log(`Finding user with ID: ${id}`);
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      this.logger.warn(`User with ID ${id} not found`);
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
+  async findOne(userId: string): Promise<UserDocument> {
     this.logger.log(`Finding user with ID: ${userId}`);
-    const user = await this.userModel.findOne({ userId });
+    const user = await this.userModel.findById(userId);
     if (!user) {
       this.logger.warn(`User with ID ${userId} not found`);
       throw new NotFoundException(`User with ID ${userId} not found`);
@@ -21,7 +31,7 @@ export class UsersService {
     return user;
   }
 
-  async updateCurrency(userId: number, amount: number): Promise<UserDocument> {
+  async updateCurrency(userId: string, amount: number): Promise<UserDocument> {
     this.logger.log(`Updating currency for user ${userId} by ${amount}`);
     const user = await this.findOne(userId);
     user.currency += amount;
@@ -30,7 +40,7 @@ export class UsersService {
     return updatedUser;
   }
 
-  async updateGroup(userId: number, groupId: string, role: 'leader' | 'member'): Promise<UserDocument> {
+  async updateGroup(userId: string, groupId: string, role: 'leader' | 'member'): Promise<UserDocument> {
     this.logger.log(`Updating group for user ${userId}. Group: ${groupId}, Role: ${role}`);
     const user = await this.findOne(userId);
     user.groupId = groupId;
@@ -40,7 +50,7 @@ export class UsersService {
     return updatedUser;
   }
 
-  async leaveGroup(userId: number): Promise<UserDocument> {
+  async leaveGroup(userId: string): Promise<UserDocument> {
     this.logger.log(`User ${userId} leaving group`);
     const user = await this.findOne(userId);
     user.groupId = undefined;

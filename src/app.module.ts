@@ -10,6 +10,7 @@ import { UsersService } from './users/users.service';
 import { GroupsController } from './groups/groups.controller';
 import { GroupsService } from './groups/groups.service';
 import { SeedService } from './seed/seed.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SeedService } from './seed/seed.service';
       { name: User.name, schema: UserSchema },
       { name: Group.name, schema: GroupSchema },
     ]),
+    AuthModule,
   ],
   controllers: [AppController, UsersController, GroupsController],
   providers: [AppService, UsersService, GroupsService, SeedService],
