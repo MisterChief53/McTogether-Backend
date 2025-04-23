@@ -40,23 +40,12 @@ export class UsersService {
     return updatedUser;
   }
 
-  async updateGroup(userId: string, groupId: string, role: 'leader' | 'member'): Promise<UserDocument> {
-    this.logger.log(`Updating group for user ${userId}. Group: ${groupId}, Role: ${role}`);
+  async updateGroup(userId: string, groupId: string | null): Promise<UserDocument> {
+    this.logger.log(`Updating group for user ${userId}. Group: ${groupId}`);
     const user = await this.findOne(userId);
     user.groupId = groupId;
-    user.role = role;
     const updatedUser = await user.save();
     this.logger.log(`Updated group for user ${userId}`);
-    return updatedUser;
-  }
-
-  async leaveGroup(userId: string): Promise<UserDocument> {
-    this.logger.log(`User ${userId} leaving group`);
-    const user = await this.findOne(userId);
-    user.groupId = undefined;
-    user.role = undefined;
-    const updatedUser = await user.save();
-    this.logger.log(`User ${userId} left group`);
     return updatedUser;
   }
 } 

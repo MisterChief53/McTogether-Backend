@@ -17,11 +17,8 @@ export class User {
   @Prop({ required: true, default: 0 })
   currency: number;
 
-  @Prop()
-  groupId?: string;
-
-  @Prop({ enum: ['leader', 'member'] })
-  role?: 'leader' | 'member';
+  @Prop({ required: true, default: null })
+  groupId: string | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User); 

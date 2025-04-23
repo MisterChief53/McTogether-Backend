@@ -13,27 +13,6 @@ export class GroupsService {
     private readonly usersService: UsersService,
   ) {}
 
-  async create(userId: string, name?: string): Promise<GroupDocument> {
-    this.logger.log(`Creating new group. Leader: ${userId}, Name: ${name || 'unnamed'}`);
-    const user = await this.usersService.findOne(userId);
-    if (user.groupId) {
-      this.logger.warn(`User ${userId} attempted to create group while already in one`);
-      throw new BadRequestException('User is already in a group');
-    }
-
-    const group = await this.groupModel.create({
-      leaderId: userId,
-      members: [userId],
-      name,
-      status: 'active',
-      createdAt: new Date(),
-    });
-
-    await this.usersService.updateGroup(userId, group.id, 'leader');
-    this.logger.log(`Created new group ${group.id} with leader ${userId}`);
-    return group;
-  }
-
   async findOne(groupId: string): Promise<GroupDocument> {
     this.logger.log(`Finding group with ID: ${groupId}`);
     const group = await this.groupModel.findById(groupId);
@@ -41,6 +20,23 @@ export class GroupsService {
       this.logger.warn(`Group with ID ${groupId} not found`);
       throw new NotFoundException(`Group with ID ${groupId} not found`);
     }
+    return group;
+  }
+
+  async create(userId: string): Promise<GroupDocument> {
+    const user = await this.usersService.findOne(userId);
+    this.logger.log(`User found: ${user}`);
+    if (user.groupId) {
+      this.logger.warn(`User ${userId} attempted to create group while already in one`);
+      throw new BadRequestException('User is already in a group');
+    }
+
+    const group = await this.groupModel.create({
+      members: [userId],
+      createdAt: new Date(),
+    });
+
+    this.usersService.updateGroup(userId, group.id);
     return group;
   }
 
@@ -56,14 +52,16 @@ export class GroupsService {
       throw new BadRequestException('User is already in a group');
     }
 
-    if (group.status !== 'active') {
-      this.logger.warn(`User ${userId} attempted to join inactive group ${groupId}`);
-      throw new BadRequestException('Group is not active');
+    if (!group) {
+      this.logger.warn(`Group with ID ${groupId} not found`);
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
     }
 
     group.members.push(userId);
+
     await group.save();
-    await this.usersService.updateGroup(userId, groupId, 'member');
+    await this.usersService.updateGroup(userId, groupId);
+
     this.logger.log(`User ${userId} joined group ${groupId}`);
     return group;
   }
@@ -75,26 +73,28 @@ export class GroupsService {
       this.usersService.findOne(userId),
     ]);
 
-    if (!user.groupId || user.groupId !== groupId) {
+    if (!group) {
+      this.logger.warn(`Group with ID ${groupId} not found`);
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+    if (!user) {
+      this.logger.warn(`User with ID ${userId} not found`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    if (!group.members.includes(userId)) {
       this.logger.warn(`User ${userId} attempted to leave group they're not in`);
       throw new BadRequestException('User is not in this group');
     }
 
-    if (user.role === 'leader') {
-      this.logger.log(`Leader ${userId} leaving group ${groupId}, disbanding group`);
-      group.status = 'disbanded';
-      await group.save();
-      await Promise.all(
-        group.members.map((memberId) =>
-          this.usersService.leaveGroup(memberId),
-        ),
-      );
-      this.logger.log(`Group ${groupId} disbanded by leader ${userId}`);
-    } else {
-      group.members = group.members.filter((id) => id !== userId);
-      await group.save();
-      await this.usersService.leaveGroup(userId);
-      this.logger.log(`User ${userId} left group ${groupId}`);
+    this.usersService.updateGroup(userId, null);
+    group.members = group.members.filter((id) => id !== userId);
+    await group.save();
+    this.logger.log(`User ${userId} left group ${groupId}`);
+
+    if (group.members.length === 0) {
+      await this.groupModel.deleteOne({ _id: groupId });
+      this.logger.log(`Group ${groupId} deleted as it has no members`); 
     }
   }
 } 
