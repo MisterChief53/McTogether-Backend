@@ -1,16 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req } from '@nestjs/common';
 import { GroupsService } from './groups.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('groups')
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
   @Post()
+  @UseGuards(AuthGuard('jwt'))
   async create(
-    @Body('userId') userId: number,
+    @Req() req: any,
     @Body('name') name?: string,
   ) {
-    return this.groupsService.create(userId, name);
+    return this.groupsService.create(req.user._id, name);
   }
 
   @Get(':groupId')
@@ -19,18 +21,20 @@ export class GroupsController {
   }
 
   @Post(':groupId/join')
+  @UseGuards(AuthGuard('jwt'))
   async join(
     @Param('groupId') groupId: string,
-    @Body('userId') userId: number,
+    @Req() req: any,
   ) {
-    return this.groupsService.join(groupId, userId);
+    return this.groupsService.join(groupId, req.user._id);
   }
 
   @Delete(':groupId')
+  @UseGuards(AuthGuard('jwt'))
   async leave(
     @Param('groupId') groupId: string,
-    @Body('userId') userId: number,
+    @Req() req: any,
   ) {
-    return this.groupsService.leave(groupId, userId);
+    return this.groupsService.leave(groupId, req.user._id);
   }
 } 

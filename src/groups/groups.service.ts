@@ -13,7 +13,7 @@ export class GroupsService {
     private readonly usersService: UsersService,
   ) {}
 
-  async create(userId: number, name?: string): Promise<GroupDocument> {
+  async create(userId: string, name?: string): Promise<GroupDocument> {
     this.logger.log(`Creating new group. Leader: ${userId}, Name: ${name || 'unnamed'}`);
     const user = await this.usersService.findOne(userId);
     if (user.groupId) {
@@ -25,6 +25,8 @@ export class GroupsService {
       leaderId: userId,
       members: [userId],
       name,
+      status: 'active',
+      createdAt: new Date(),
     });
 
     await this.usersService.updateGroup(userId, group.id, 'leader');
@@ -42,7 +44,7 @@ export class GroupsService {
     return group;
   }
 
-  async join(groupId: string, userId: number): Promise<GroupDocument> {
+  async join(groupId: string, userId: string): Promise<GroupDocument> {
     this.logger.log(`User ${userId} attempting to join group ${groupId}`);
     const [group, user] = await Promise.all([
       this.findOne(groupId),
@@ -66,7 +68,7 @@ export class GroupsService {
     return group;
   }
 
-  async leave(groupId: string, userId: number): Promise<void> {
+  async leave(groupId: string, userId: string): Promise<void> {
     this.logger.log(`User ${userId} attempting to leave group ${groupId}`);
     const [group, user] = await Promise.all([
       this.findOne(groupId),

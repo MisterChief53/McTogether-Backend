@@ -1,28 +1,111 @@
 # MC Together API Specification
 
-## Hardcoded Users
-The following users are pre-configured in the system:
+## Authentication
 
+### JWT Token
+All authenticated requests must include a JWT token in the Authorization header:
 ```typescript
-interface HardcodedUser {
-  userId: number;
-  currency: number;
+headers: {
+  'Authorization': `Bearer ${token}`,
+  'Content-Type': 'application/json'
+}
+```
+
+### Register User
+```typescript
+interface RegisterRequest {
+  email: string;
+  username: string;
+  password: string;
 }
 
-const HARDCODED_USERS: HardcodedUser[] = [
-  { userId: 1, currency: 1000 },
-  { userId: 2, currency: 800 },
-  { userId: 3, currency: 1200 },
-  { userId: 4, currency: 600 },
-  { userId: 5, currency: 1500 }
-];
+interface RegisterResponse {
+  user: {
+    _id: string;
+    email: string;
+    username: string;
+    currency: number;
+  };
+  token: string;  // JWT token
+}
+
+// Example request
+const register = async (email: string, username: string, password: string): Promise<RegisterResponse> => {
+  const response = await fetch('http://localhost:3000/auth/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, username, password }),
+  });
+  if (!response.ok) throw new Error('Failed to register');
+  return response.json();
+};
 ```
 
-These users are automatically created when the backend starts if they don't already exist. The frontend should use these exact user IDs (1-5) for all operations. (so, the requets will be made with these ids!)
+### Login
+```typescript
+interface LoginRequest {
+  identifier: string;  // Can be either email or username
+  password: string;
+}
 
-## Base URL
+interface LoginResponse {
+  user: {
+    _id: string;
+    email: string;
+    username: string;
+    currency: number;
+  };
+  token: string;  // JWT token
+}
+
+// Example request
+const login = async (identifier: string, password: string): Promise<LoginResponse> => {
+  const response = await fetch('http://localhost:3000/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ identifier, password }),
+  });
+  if (!response.ok) throw new Error('Failed to login');
+  return response.json();
+};
+
+// Example usage with email
+const loginWithEmail = async () => {
+  return login('user@example.com', 'password');
+};
+
+// Example usage with username
+const loginWithUsername = async () => {
+  return login('username', 'password');
+};
 ```
-http://localhost:3000
+
+### Get Current User
+```typescript
+interface CurrentUserResponse {
+  _id: string;
+  email: string;
+  username: string;
+  currency: number;
+  groupId?: string;
+  role?: 'leader' | 'member';
+}
+
+// Example request
+const getCurrentUser = async (token: string): Promise<CurrentUserResponse> => {
+  const response = await fetch('http://localhost:3000/auth/me', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to get current user');
+  return response.json();
+};
 ```
 
 ## User Management
@@ -30,15 +113,22 @@ http://localhost:3000
 ### Get User Information
 ```typescript
 interface UserResponse {
-  userId: number;
+  _id: string;
+  email: string;
+  username: string;
   currency: number;
   groupId?: string;
   role?: 'leader' | 'member';
 }
 
 // Example request
-const getUser = async (userId: number): Promise<UserResponse> => {
-  const response = await fetch(`http://localhost:3000/users/${userId}`);
+const getUser = async (userId: string, token: string): Promise<UserResponse> => {
+  const response = await fetch(`http://localhost:3000/users/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
   if (!response.ok) throw new Error('Failed to fetch user');
   return response.json();
 };
@@ -53,10 +143,11 @@ interface UpdateCurrencyRequest {
 interface UpdateCurrencyResponse extends UserResponse {}
 
 // Example request
-const updateCurrency = async (userId: number, amount: number): Promise<UpdateCurrencyResponse> => {
+const updateCurrency = async (userId: string, amount: number, token: string): Promise<UpdateCurrencyResponse> => {
   const response = await fetch(`http://localhost:3000/users/${userId}/currency`, {
     method: 'PATCH',
     headers: {
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ amount }),
@@ -71,27 +162,27 @@ const updateCurrency = async (userId: number, amount: number): Promise<UpdateCur
 ### Create Group
 ```typescript
 interface CreateGroupRequest {
-  userId: number;
   name?: string;
 }
 
 interface CreateGroupResponse {
   _id: string;      // Group ID
-  leaderId: number;
-  members: number[];
+  leaderId: string; // User ID of the leader
+  members: string[]; // Array of member user IDs
   status: 'active' | 'disbanded';
   name?: string;
   createdAt: string;
 }
 
 // Example request
-const createGroup = async (userId: number, name?: string): Promise<CreateGroupResponse> => {
+const createGroup = async (name: string | undefined, token: string): Promise<CreateGroupResponse> => {
   const response = await fetch('http://localhost:3000/groups', {
     method: 'POST',
     headers: {
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ userId, name }),
+    body: JSON.stringify({ name }),
   });
   if (!response.ok) throw new Error('Failed to create group');
   return response.json();
@@ -103,8 +194,13 @@ const createGroup = async (userId: number, name?: string): Promise<CreateGroupRe
 interface GroupResponse extends CreateGroupResponse {}
 
 // Example request
-const getGroup = async (groupId: string): Promise<GroupResponse> => {
-  const response = await fetch(`http://localhost:3000/groups/${groupId}`);
+const getGroup = async (groupId: string, token: string): Promise<GroupResponse> => {
+  const response = await fetch(`http://localhost:3000/groups/${groupId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
   if (!response.ok) throw new Error('Failed to fetch group');
   return response.json();
 };
@@ -112,20 +208,16 @@ const getGroup = async (groupId: string): Promise<GroupResponse> => {
 
 ### Join Group
 ```typescript
-interface JoinGroupRequest {
-  userId: number;
-}
-
 interface JoinGroupResponse extends GroupResponse {}
 
 // Example request
-const joinGroup = async (groupId: string, userId: number): Promise<JoinGroupResponse> => {
+const joinGroup = async (groupId: string, token: string): Promise<JoinGroupResponse> => {
   const response = await fetch(`http://localhost:3000/groups/${groupId}/join`, {
     method: 'POST',
     headers: {
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ userId }),
   });
   if (!response.ok) throw new Error('Failed to join group');
   return response.json();
@@ -134,18 +226,14 @@ const joinGroup = async (groupId: string, userId: number): Promise<JoinGroupResp
 
 ### Leave Group
 ```typescript
-interface LeaveGroupRequest {
-  userId: number;
-}
-
 // Example request
-const leaveGroup = async (groupId: string, userId: number): Promise<void> => {
+const leaveGroup = async (groupId: string, token: string): Promise<void> => {
   const response = await fetch(`http://localhost:3000/groups/${groupId}`, {
     method: 'DELETE',
     headers: {
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ userId }),
   });
   if (!response.ok) throw new Error('Failed to leave group');
 };
@@ -164,6 +252,7 @@ interface ErrorResponse {
 ```
 
 Common error scenarios:
+- `401 Unauthorized`: Invalid or missing JWT token
 - `404 Not Found`: User or group not found
 - `400 Bad Request`: Invalid input or business rule violation
 - `500 Internal Server Error`: Server-side error
@@ -171,23 +260,31 @@ Common error scenarios:
 ## Example Usage
 
 ```typescript
-// Example: Create a group and have another user join it
+// Example: Register, login, create group, and have another user join it
 async function example() {
   try {
+    // Register a new user
+    const registerResponse = await register('user1@example.com', 'user1', 'password1');
+    const token1 = registerResponse.token;
+
+    // Register another user
+    const registerResponse2 = await register('user2@example.com', 'user2', 'password2');
+    const token2 = registerResponse2.token;
+
     // User 1 creates a group
-    const group = await createGroup(1, 'My Group');
+    const group = await createGroup('My Group', token1);
     console.log('Group created:', group);
 
     // User 2 joins the group
-    const updatedGroup = await joinGroup(group._id, 2);
+    const updatedGroup = await joinGroup(group._id, token2);
     console.log('User 2 joined:', updatedGroup);
 
     // Check user 2's status
-    const user2 = await getUser(2);
+    const user2 = await getCurrentUser(token2);
     console.log('User 2 status:', user2);
 
     // User 2 leaves the group
-    await leaveGroup(group._id, 2);
+    await leaveGroup(group._id, token2);
     console.log('User 2 left the group');
 
   } catch (error) {
@@ -197,8 +294,10 @@ async function example() {
 ```
 
 ## Notes
-1. All user IDs must be between 1 and 5
-2. Users can only be in one group at a time
-3. Only the group leader can delete the group
-4. When the leader leaves, the group is automatically disbanded
-5. Currency can be positive or negative (for adding or subtracting) 
+1. All authenticated requests require a valid JWT token
+2. JWT tokens expire after 24 hours
+3. Users can only be in one group at a time
+4. Only the group leader can delete the group
+5. When the leader leaves, the group is automatically disbanded
+6. Currency can be positive or negative (for adding or subtracting)
+7. Store JWT token securely (e.g., using AsyncStorage in Expo) 

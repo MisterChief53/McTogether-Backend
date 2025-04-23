@@ -7,7 +7,7 @@ export class UsersController {
 
   @Get(':userId')
   async findOne(@Param('userId') userId: string) {
-    return this.usersService.findOne(Number(userId));
+    return this.usersService.findOne(userId);
   }
 
   @Patch(':userId/currency')
@@ -15,6 +15,6 @@ export class UsersController {
     @Param('userId') userId: string,
     @Body('amount') amount: number,
   ) {
-    return this.usersService.updateCurrency(Number(userId), amount);
+    return this.usersService.updateCurrency(userId, amount);
   }
 } 

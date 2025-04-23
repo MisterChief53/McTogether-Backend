@@ -6,10 +6,10 @@ export type GroupDocument = Group & Document;
 @Schema()
 export class Group {
   @Prop({ required: true })
-  leaderId: number;
+  leaderId: string;
 
-  @Prop({ type: [Number], default: [] })
-  members: number[];
+  @Prop({ type: [String], default: [] })
+  members: string[];
 
   @Prop({ required: true, default: Date.now })
   createdAt: Date;
