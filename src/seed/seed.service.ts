@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../schemas/user.schema';
+import { Menu, MenuDocument } from '../schemas/menu.schema';
 import { InjectConnection } from '@nestjs/mongoose';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class SeedService implements OnModuleInit {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Menu.name) private menuModel: Model<MenuDocument>,
     @InjectConnection() private connection: any,
   ) {}
 
@@ -25,6 +27,61 @@ export class SeedService implements OnModuleInit {
       this.logger.error('Error during seed process:', error);
       throw error;
     }
+  }
+
+  private async seedMenus() {
+    try {
+      this.logger.log('Starting to seed menus...');
+      const testMenus = [
+        {
+          name: 'BigMac',
+          price: 5.99,
+          imageUrl: 'https://example.com/bigmac.jpg',
+        },
+        {
+          name: 'Cheeseburger',
+          price: 3.49,
+          imageUrl: 'https://example.com/cheeseburger.jpg',
+        },
+        {
+          name: 'French Fries',
+          price: 2.99,
+          imageUrl: 'https://example.com/fries.jpg',
+        },
+        {
+          name: 'Coca-Cola',
+          price: 1.99,
+          imageUrl: 'https://example.com/coke.jpg',
+        },
+        {
+          name: 'Chicken Nuggets',
+          price: 4.99,
+          imageUrl: 'https://example.com/nuggets.jpg',
+        },
+      ];
+      
+      let createdCount = 0;
+      let existingCount = 0;
+
+      this.logger.log(`Processing ${testMenus.length} test menus...`);
+      for (const menu of testMenus) {
+        this.logger.log(`Checking menu ${menu.name}...`);
+        const existingMenu = await this.menuModel.findOne({ name: menu.name });
+
+        if (!existingMenu) {
+          this.logger.log(`Creating new menu ${menu.name}...`);
+          await this.menuModel.create(menu);
+          this.logger.log(`Created menu ${menu.name}`);
+          createdCount++;
+        } else {
+          this.logger.log(`Menu ${menu.name} already exists`);
+          existingCount++;
+        }
+      }  
+    } catch (error) {
+        this.logger.error('Error in seedMenus:', error);
+        throw error;
+      }
   }
 
   private async seedUsers() {
