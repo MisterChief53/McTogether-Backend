@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Head, Injectable } from '@nestjs/common';
 import axios from 'axios';
 
 import { Order } from './dto/order.dto';
@@ -7,6 +7,7 @@ import { MemberLeftGroup } from './dto/member-left-group.dto';
 
 const POINTS_PER_MONEY = 5; // points per money unit
 const POINTS_PER_MEMBER = 10; // points per member
+const PAYMENT_API = 'http://localhost:3001';
 
 @Injectable()
 export class PaymentsService {
@@ -28,17 +29,53 @@ export class PaymentsService {
 
         try {
             // Call mock API
-            const response = await axios.get(`http://localhost:3000/payments/${payDto.orderId}`, {
+            const client_id = payDto.userEmail
+            const token = await axios.post(`${PAYMENT_API}/payments/auth/token`, {
+                method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${payDto.cardName}`,
+                    'Content-Type': 'application/json',
+                    'x-mcd-api-key': 'test_mcd_api_key_123',
                 },
+                body: JSON.stringify({client_id}),
             });
 
-            const paymentStatus = response.data.order_status;
+            if (token.status !== 200) {
+                return { success: false, message: 'Failed to obtain auth token' };
+            }
+            
+            const paymentResponse = await axios.post(`${PAYMENT_API}/payments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token.data.access_token}`,
+                },
+                body: {
+                    'checkoud_id': payDto.orderId,
+                    'buyer_info': {
+                        'email': payDto.userEmail,
+                        'name': payDto.cardName,
+                    },
+                    'psp': "stripe",
+                    'psp_info': {
+                        'transaction_id': payDto.orderId,
+                        'success': payDto.cardName !== 'fail',
+                    },
+                    'payment_orders': [
+                        {
+                            'payment_order_id': payDto.orderId,
+                            'client_id': payDto.userEmail,
+                            'order_info': [],
+                            'amount': payDto.paymentAmount,
+                            'currency': 'USD',
+                        }
+                    ]
+                }
+            });
 
-            if (paymentStatus !== 'COMPLETED') {
+            if (paymentResponse.status !== 200) {
                 return { success: false, message: 'Payment failed' };
             }
+
             // Remove the user from the payments map
             const order = this.orders.find(o => o.orderId === payDto.orderId);
             if (!order) {
