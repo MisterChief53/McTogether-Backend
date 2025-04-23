@@ -266,13 +266,14 @@ Common error scenarios:
 3. Users can only be in one group at a time
 4. Only the group leader can delete the group
 5. When the leader leaves, the group is automatically disbanded
-6. Currency can be positive or negative (for adding or subtracting)
-7. Store JWT token securely (e.g., using AsyncStorage in Expo)
-8. All IDs (user and group) are MongoDB ObjectIds (strings)
-9. The `/auth/me` endpoint returns the full user object including group and role information
-10. Group operations (create/join/leave) require authentication and use the JWT token to identify the user
-11. Error responses include detailed messages that should be shown to users
-12. The group status can be either 'active' or 'disbanded'
+6. If all members leave a group, the group is automatically disbanded
+7. Currency can be positive or negative (for adding or subtracting)
+8. Store JWT token securely (e.g., using AsyncStorage in Expo)
+9. All IDs (user and group) are MongoDB ObjectIds (strings)
+10. The `/auth/me` endpoint returns the full user object including group and role information
+11. Group operations (create/join/leave) require authentication and use the JWT token to identify the user
+12. Error responses include detailed messages that should be shown to users
+13. The group status can be either 'active' or 'disbanded'
 
 ## Example Usage
 
@@ -308,4 +309,124 @@ async function example() {
     console.error('Error:', error);
   }
 }
-``` 
+```
+
+## Payments
+
+### Make Order
+```typescript
+interface Order {
+  // Order details to be specified
+}
+
+// Example request
+const makeOrder = async (order: Order, token: string): Promise<void> => {
+  const response = await fetch('http://localhost:3000/payments/make-order', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(order),
+  });
+  if (!response.ok) throw new Error('Failed to make order');
+};
+```
+
+### Process Payment
+```typescript
+interface Pay {
+  // Payment details to be specified
+}
+
+// Example request
+const pay = async (payment: Pay, token: string): Promise<void> => {
+  const response = await fetch('http://localhost:3000/payments/pay', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payment),
+  });
+  if (!response.ok) throw new Error('Failed to process payment');
+};
+```
+
+### Handle Member Left Group
+```typescript
+interface MemberLeftGroup {
+  // Member left details to be specified
+}
+
+// Example request
+const memberLeft = async (details: MemberLeftGroup, token: string): Promise<void> => {
+  const response = await fetch('http://localhost:3000/payments/member-left', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(details),
+  });
+  if (!response.ok) throw new Error('Failed to process member left');
+};
+```
+
+## Pets
+
+### Get User's Pet
+```typescript
+interface PetResponse {
+  // Pet details to be specified
+}
+
+// Example request
+const getPet = async (userId: string, token: string): Promise<PetResponse> => {
+  const response = await fetch(`http://localhost:3000/pets/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch pet');
+  return response.json();
+};
+```
+
+### Create Pet
+```typescript
+// Example request
+const createPet = async (userId: string, token: string): Promise<PetResponse> => {
+  const response = await fetch('http://localhost:3000/pets', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ userId }),
+  });
+  if (!response.ok) throw new Error('Failed to create pet');
+  return response.json();
+};
+```
+
+### Update Pet
+```typescript
+interface PetUpdate {
+  // Pet update details to be specified
+}
+
+// Example request
+const updatePet = async (pet: PetUpdate, token: string): Promise<PetResponse> => {
+  const response = await fetch('http://localhost:3000/pets/update', {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(pet),
+  });
+  if (!response.ok) throw new Error('Failed to update pet');
+  return response.json();
+}; 
