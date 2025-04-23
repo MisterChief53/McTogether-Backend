@@ -16,11 +16,14 @@ export class Pet {
   @Prop({ required: true })
   userId: number;
 
-  @Prop({ required: true }) 
+  @Prop({ required: true, default: 'name' }) 
   name: string;
 
   @Prop({ required: true, default: PetMood.NEUTRAL })
   mood: PetMood;
+
+  @Prop({ required: true, default: 1 })
+  hungryLevel: number;
 
   @Prop({ required: true, default: 0 })
   typeId: number;
