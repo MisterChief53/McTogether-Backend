@@ -4,6 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Controller('groups')
 export class GroupsController {
+  private readonly logger = new Logger(GroupsController.name);
   constructor(private readonly groupsService: GroupsService) {}
 
   @Get(':groupId')

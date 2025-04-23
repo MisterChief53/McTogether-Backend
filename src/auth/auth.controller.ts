@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Request, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -25,7 +25,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  async getProfile(@Request() req : any) {
-    return req.user;
+  async getProfile(@Req() req: any) {
+    return this.authService.validateUser(req.user._id);
   }
 } 
