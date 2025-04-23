@@ -77,6 +77,7 @@ export class AuthService {
         email: user.email,
         username: user.username,
         currency: user.currency,
+        groupId: null,
       },
       token,
     };
