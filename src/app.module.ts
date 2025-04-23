@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { Group, GroupSchema } from './schemas/group.schema';
 import { Pet, PetSchema } from './schemas/pet.schema';
+import { Menu, MenuSchema } from './schemas/menu.schema';
 import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
 import { GroupsController } from './groups/groups.controller';
@@ -31,6 +32,7 @@ import { AuthModule } from './auth/auth.module';
       { name: User.name, schema: UserSchema },
       { name: Group.name, schema: GroupSchema },
       { name: Pet.name, schema: PetSchema },
+      { name: Menu.name, schema: MenuSchema },
     ]),
     AuthModule,
   ],
