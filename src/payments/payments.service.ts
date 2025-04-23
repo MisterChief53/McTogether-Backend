@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
+
 import { Order } from './dto/order.dto';
 import { Pay } from './dto/pay.dto';
 import { MemberLeftGroup } from './dto/member-left-group.dto';
@@ -21,40 +23,52 @@ export class PaymentsService {
 
     async processPayment(payDto: Pay) {
         if (payDto.cardName === 'fail')
+            // TODO change field success to false to simulate a failed payment
             return { success: false, message: 'Payment failed' };
 
-        const paymentStatus = 'COMPLETED'; // Simulate payment status call to McDonalds API
+        try {
+            // Call mock API
+            const response = await axios.get(`http://localhost:3000/payments/${payDto.orderId}`, {
+                headers: {
+                    Authorization: `Bearer ${payDto.cardName}`,
+                },
+            });
 
-        if (paymentStatus !== 'COMPLETED') {
-            return { success: false, message: 'Payment failed' };
-        }
+            const paymentStatus = response.data.order_status;
 
-        // Remove the user from the payments map
-        const order = this.orders.find(o => o.orderId === payDto.orderId);
-        if (!order) {
-            return { success: false, message: 'Order not found' };
-        }
-
-        this.payments.get(order.orderId)?.delete(payDto.userEmail);
-
-        // Check if all members have paid
-        // wait until there are no members in the payments map
-        // continuously check if the payments map is empty until a timeout of 5 minutes
-        const timeout = Date.now() + 5 * 60 * 1000;
-        while ((this.payments.get(order.orderId)?.size ?? 0) > 0) {
-            if (Date.now() > timeout) {
-                break;
+            if (paymentStatus !== 'COMPLETED') {
+                return { success: false, message: 'Payment failed' };
             }
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Remove the user from the payments map
+            const order = this.orders.find(o => o.orderId === payDto.orderId);
+            if (!order) {
+                return { success: false, message: 'Order not found' };
+            }
+
+            this.payments.get(order.orderId)?.delete(payDto.userEmail);
+
+            // Check if all members have paid
+            // wait until there are no members in the payments map
+            // continuously check if the payments map is empty until a timeout of 5 minutes
+            const timeout = Date.now() + 5 * 60 * 1000;
+            while ((this.payments.get(order.orderId)?.size ?? 0) > 0) {
+                if (Date.now() > timeout) {
+                    break;
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // compute the reward points based on the payment amount and the group size
+            const groupSize = order.members.length - (this.payments.get(order.orderId)?.size ?? 0);
+            const paymentAmount = payDto.paymentAmount;
+
+            const rewards = groupSize * POINTS_PER_MEMBER + paymentAmount * POINTS_PER_MONEY;
+
+            return { success: true, rewards: rewards };
+        } catch (error) {
+            console.error('Error calling mock API:', error);
+            return { success: false, message: 'Payment failed' };
         }
-
-        // compute the reward points based on the payment amount and the group size
-        const groupSize = order.members.length - (this.payments.get(order.orderId)?.size ?? 0);
-        const paymentAmount = payDto.paymentAmount;
-
-        const rewards = groupSize * POINTS_PER_MEMBER + paymentAmount * POINTS_PER_MONEY;
-
-        return { success: true, rewards: rewards };
     }
 
     async handleMemberLeft(memberLeftDto: MemberLeftGroup) {
