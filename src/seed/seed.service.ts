@@ -35,28 +35,23 @@ export class SeedService implements OnModuleInit {
       const testMenus = [
         {
           name: 'BigMac',
-          price: 5.99,
-          imageUrl: 'https://example.com/bigmac.jpg',
+          price: 31.00,
+          imageUrl: '',
         },
         {
-          name: 'Cheeseburger',
-          price: 3.49,
-          imageUrl: 'https://example.com/cheeseburger.jpg',
+          name: 'McFeast',
+          price: 35.00,
+          imageUrl: '',
         },
         {
-          name: 'French Fries',
-          price: 2.99,
-          imageUrl: 'https://example.com/fries.jpg',
+          name: 'McChicken',
+          price: 25.00,
+          imageUrl: '',
         },
         {
-          name: 'Coca-Cola',
-          price: 1.99,
-          imageUrl: 'https://example.com/coke.jpg',
-        },
-        {
-          name: 'Chicken Nuggets',
-          price: 4.99,
-          imageUrl: 'https://example.com/nuggets.jpg',
+          name: 'McFries',
+          price: 20,
+          imageUrl: '',
         },
       ];
       
