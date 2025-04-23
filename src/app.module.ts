@@ -9,6 +9,8 @@ import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
 import { GroupsController } from './groups/groups.controller';
 import { GroupsService } from './groups/groups.service';
+import { PaymentsController } from './payments/payments.controller';
+import { PaymentsService } from './payments/payments.service';
 import { SeedService } from './seed/seed.service';
 import { AuthModule } from './auth/auth.module';
 
@@ -30,7 +32,7 @@ import { AuthModule } from './auth/auth.module';
     ]),
     AuthModule,
   ],
-  controllers: [AppController, UsersController, GroupsController],
-  providers: [AppService, UsersService, GroupsService, SeedService],
+  controllers: [AppController, UsersController, GroupsController, PaymentsController],
+  providers: [AppService, UsersService, GroupsService, SeedService, PaymentsService],
 })
 export class AppModule {}
