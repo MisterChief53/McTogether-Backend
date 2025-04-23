@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../schemas/user.schema';
+import { GroupsService } from '../groups/groups.service';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +13,7 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
+    private readonly groupsService: GroupsService,
   ) {}
 
   async register(email: string, username: string, password: string) {
@@ -68,16 +70,27 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = this.jwtService.sign({ sub: user._id });
+    // If user is in a group, make them leave it
+    if (user.groupId) {
+      try {
+        await this.groupsService.leave(user.groupId, user.id);
+        this.logger.log(`User ${user.id} left group ${user.groupId} during login`);
+      } catch (error) {
+        this.logger.error(`Failed to leave group during login: ${error.message}`);
+        // Continue with login even if leaving group fails
+      }
+    }
+
+    const token = this.jwtService.sign({ sub: user.id });
 
     this.logger.log(`User logged in: ${user.email}`);
     return {
       user: {
-        _id: user._id,
+        _id: user.id,
         email: user.email,
         username: user.username,
         currency: user.currency,
-        groupId: null,
+        groupId: user.groupId,
       },
       token,
     };

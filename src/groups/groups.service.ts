@@ -24,19 +24,26 @@ export class GroupsService {
   }
 
   async create(userId: string): Promise<GroupDocument> {
+    this.logger.log(`[Create Group] Starting group creation for user ${userId}`);
     const user = await this.usersService.findOne(userId);
-    this.logger.log(`User found: ${user}`);
+    this.logger.log(`[Create Group] Found user: ${JSON.stringify(user)}`);
+    
     if (user.groupId) {
-      this.logger.warn(`User ${userId} attempted to create group while already in one`);
+      this.logger.warn(`[Create Group] User ${userId} attempted to create group while already in group ${user.groupId}`);
       throw new BadRequestException('User is already in a group');
     }
 
+    this.logger.log(`[Create Group] Creating new group with user ${userId} as first member`);
     const group = await this.groupModel.create({
       members: [userId],
       createdAt: new Date(),
     });
+    this.logger.log(`[Create Group] Group created successfully with ID: ${group.id}`);
 
-    this.usersService.updateGroup(userId, group.id);
+    this.logger.log(`[Create Group] Updating user ${userId} to be in group ${group.id}`);
+    await this.usersService.updateGroup(userId, group.id);
+    this.logger.log(`[Create Group] User group updated successfully`);
+
     return group;
   }
 

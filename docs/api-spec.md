@@ -309,7 +309,7 @@ async function example() {
     console.error('Error:', error);
   }
 }
-```
+``` 
 
 ## Payments
 

@@ -17,7 +17,7 @@ export class User {
   @Prop({ required: true, default: 0 })
   currency: number;
 
-  @Prop({ type: String, required: true, default: null })
+  @Prop({ type: String, default: null })
   groupId: string | null;
 }
 

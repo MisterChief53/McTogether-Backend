@@ -18,9 +18,9 @@ export class GroupsController {
   @Post()
   @UseGuards(AuthGuard('jwt'))
   async create(
-    @Body('userId') userId: string
+    @Req() req: any
   ) {
-    return this.groupsService.create(userId);
+    return this.groupsService.create(req.user.id);
   }
 
   @Patch(':groupId/join')

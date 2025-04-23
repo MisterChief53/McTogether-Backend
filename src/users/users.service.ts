@@ -22,12 +22,13 @@ export class UsersService {
   }
 
   async findOne(userId: string): Promise<UserDocument> {
-    this.logger.log(`Finding user with ID: ${userId}`);
+    this.logger.log(`[Users Service] Finding user with ID: ${userId}`);
     const user = await this.userModel.findById(userId);
     if (!user) {
-      this.logger.warn(`User with ID ${userId} not found`);
+      this.logger.warn(`[Users Service] User with ID ${userId} not found`);
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
+    this.logger.log(`[Users Service] Found user: ${JSON.stringify(user)}`);
     return user;
   }
 
@@ -40,12 +41,16 @@ export class UsersService {
     return updatedUser;
   }
 
-  async updateGroup(userId: string, groupId: string | null): Promise<UserDocument> {
-    this.logger.log(`Updating group for user ${userId}. Group: ${groupId}`);
-    const user = await this.findOne(userId);
+  async updateGroup(userId: string, groupId: string | null): Promise<void> {
+    this.logger.log(`[Users Service] Updating group for user ${userId}. New group: ${groupId}`);
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      this.logger.warn(`[Users Service] User with ID ${userId} not found during group update`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    
     user.groupId = groupId;
-    const updatedUser = await user.save();
-    this.logger.log(`Updated group for user ${userId}`);
-    return updatedUser;
+    await user.save();
+    this.logger.log(`[Users Service] Successfully updated user ${userId} group to ${groupId}`);
   }
 } 
