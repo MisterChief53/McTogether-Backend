@@ -19,8 +19,8 @@ export class SeedService implements OnModuleInit {
       this.logger.log('Waiting for MongoDB connection...');
       await this.connection;
       this.logger.log('MongoDB connection established, starting seed process...');
-      await this.seedUsers();
-      this.logger.log('Seed process completed');
+    await this.seedUsers();
+    this.logger.log('Seed process completed');
     } catch (error) {
       this.logger.error('Error during seed process:', error);
       throw error;
@@ -61,10 +61,10 @@ export class SeedService implements OnModuleInit {
           password: 'password5',
           currency: 1500,
         },
-      ];
+    ];
 
-      let createdCount = 0;
-      let existingCount = 0;
+    let createdCount = 0;
+    let existingCount = 0;
 
       this.logger.log(`Processing ${testUsers.length} test users...`);
 
@@ -74,7 +74,7 @@ export class SeedService implements OnModuleInit {
           $or: [{ email: user.email }, { username: user.username }],
         });
 
-        if (!existingUser) {
+      if (!existingUser) {
           this.logger.log(`Creating new user ${user.username}...`);
           // Hash password before creating user
           const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -83,14 +83,14 @@ export class SeedService implements OnModuleInit {
             password: hashedPassword,
           });
           this.logger.log(`Created user ${user.username} with ${user.currency} currency`);
-          createdCount++;
-        } else {
+        createdCount++;
+      } else {
           this.logger.log(`User ${user.username} already exists with ${existingUser.currency} currency`);
-          existingCount++;
-        }
+        existingCount++;
       }
+    }
 
-      this.logger.log(`Seed summary: ${createdCount} users created, ${existingCount} users already existed`);
+    this.logger.log(`Seed summary: ${createdCount} users created, ${existingCount} users already existed`);
     } catch (error) {
       this.logger.error('Error in seedUsers:', error);
       throw error;
