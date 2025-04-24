@@ -7,7 +7,7 @@ import { MemberLeftGroup } from './dto/member-left-group.dto';
 
 const POINTS_PER_MONEY = 5; // points per money unit
 const POINTS_PER_MEMBER = 10; // points per member
-const PAYMENT_API = 'http://192.168.100.16:3001/api/v1';
+const PAYMENT_API = 'http://192.168.100.13:3001/api/v1';
 
 @Injectable()
 export class PaymentsService {
