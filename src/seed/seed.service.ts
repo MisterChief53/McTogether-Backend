@@ -85,32 +85,32 @@ export class SeedService implements OnModuleInit {
       const testUsers = [
         {
           email: 'test1@example.com',
-          username: 'test1',
-          password: 'password1',
+          username: 'rodrigo',
+          password: 'rodrigo',
           currency: 1000,
         },
         {
           email: 'test2@example.com',
-          username: 'test2',
-          password: 'password2',
+          username: 'mikel',
+          password: 'mikel',
           currency: 800,
         },
         {
           email: 'test3@example.com',
-          username: 'test3',
-          password: 'password3',
+          username: 'evelyn',
+          password: 'evelyn',
           currency: 1200,
         },
         {
           email: 'test4@example.com',
-          username: 'test4',
-          password: 'password4',
+          username: 'francisco',
+          password: 'francisco',
           currency: 600,
         },
         {
           email: 'test5@example.com',
-          username: 'test5',
-          password: 'password5',
+          username: 'angel',
+          password: 'angel',
           currency: 1500,
         },
     ];
