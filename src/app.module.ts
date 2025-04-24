@@ -15,6 +15,7 @@ import { PaymentsController } from './payments/payments.controller';
 import { PaymentsService } from './payments/payments.service';
 import { SeedService } from './seed/seed.service';
 import { AuthModule } from './auth/auth.module';
+import { GatewayModule } from './websockets/party.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AuthModule } from './auth/auth.module';
       { name: Menu.name, schema: MenuSchema },
     ]),
     AuthModule,
+    GatewayModule
   ],
   controllers: [AppController, UsersController, GroupsController, PaymentsController],
   providers: [AppService, UsersService, GroupsService, SeedService, PaymentsService],
