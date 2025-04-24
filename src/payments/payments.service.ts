@@ -7,7 +7,7 @@ import { MemberLeftGroup } from './dto/member-left-group.dto';
 
 const POINTS_PER_MONEY = 5; // points per money unit
 const POINTS_PER_MEMBER = 10; // points per member
-const PAYMENT_API = 'http://localhost:3001';
+const PAYMENT_API = 'http://192.168.100.16:3001/api/v1';
 
 @Injectable()
 export class PaymentsService {
@@ -29,50 +29,61 @@ export class PaymentsService {
 
         try {
             // Call mock API
-            const client_id = payDto.userEmail
-            const token = await axios.post(`${PAYMENT_API}/payments/auth/token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-mcd-api-key': 'test_mcd_api_key_123',
-                },
-                body: JSON.stringify({client_id}),
-            });
+            const client_id = payDto.userEmail;
+            console.log('Obtaining authentication token...');
+            const token = await axios.post(`${PAYMENT_API}/payments/auth/token`, 
+                { client_id: client_id },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-mcd-api-key': 'test_mcd_api_key_123',
+                    }
+                }
+            );
 
-            if (token.status !== 200) {
-                return { success: false, message: 'Failed to obtain auth token' };
+            if (token.status !== 201) {
+                return { success: false, message: `Failed to obtain auth token. Returned ${token.status}` };
             }
             
-            const paymentResponse = await axios.post(`${PAYMENT_API}/payments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token.data.access_token}`,
-                },
-                body: {
-                    'checkoud_id': payDto.orderId,
-                    'buyer_info': {
-                        'email': payDto.userEmail,
-                        'name': payDto.cardName,
+            console.log('Obtained authentication token OK');
+            console.log('Calling mock API...');
+
+            const paymentResponse = await axios.post(`${PAYMENT_API}/payments`,
+                {
+                    checkout_id: payDto.orderId,
+                    buyer_info: {
+                        email: payDto.userEmail,
+                        name: payDto.cardName,
                     },
-                    'psp': "stripe",
-                    'psp_info': {
-                        'transaction_id': payDto.orderId,
-                        'success': payDto.cardName !== 'fail',
+                    psp: "stripe",
+                    psp_info: {
+                        transaction_id: payDto.orderId,
+                        success: payDto.cardName !== 'fail',
                     },
-                    'payment_orders': [
+                    payment_orders: [
                         {
-                            'payment_order_id': payDto.orderId,
-                            'client_id': payDto.userEmail,
-                            'order_info': [],
-                            'amount': payDto.paymentAmount,
-                            'currency': 'USD',
+                            payment_order_id: payDto.orderId,
+                            client_id: payDto.userEmail,
+                            location_id: "MX",
+                            order_info: {
+                                items: ["burger", "fries"]
+                            },
+                            amount: payDto.paymentAmount,
+                            currency: 'USD',
                         }
                     ]
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token.data.access_token}`,
+                    },
                 }
-            });
+            );
 
-            if (paymentResponse.status !== 200) {
+            console.log('Payment response:', paymentResponse.data);
+
+            if (paymentResponse.status !== 201) {
                 return { success: false, message: 'Payment failed' };
             }
 
@@ -104,7 +115,7 @@ export class PaymentsService {
             return { success: true, rewards: rewards };
         } catch (error) {
             console.error('Error calling mock API:', error);
-            return { success: false, message: 'Payment failed' };
+            return { success: false, message: error };
         }
     }
 
