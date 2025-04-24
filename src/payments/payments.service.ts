@@ -19,6 +19,7 @@ export class PaymentsService {
         // Add the order and the members to the payments map
         this.payments.set(orderDto.orderId,
             new Set(orderDto.members.map(member => member.userEmail)));
+        console.log("processOrder", this.orders);
         return { success: true };
     }
 
@@ -29,6 +30,14 @@ export class PaymentsService {
 
         try {
             // Call mock API
+
+            // Remove the user from the payments map
+            console.log("processPayment", this.orders);
+            const order = this.orders.find(o => o.orderId === payDto.orderId);
+            if (!order) {
+                return { success: false, message: 'Order not found' };
+            }
+
             const client_id = payDto.userEmail;
             console.log('Obtaining authentication token...');
             const token = await axios.post(`${PAYMENT_API}/payments/auth/token`, 
@@ -85,12 +94,6 @@ export class PaymentsService {
 
             if (paymentResponse.status !== 201) {
                 return { success: false, message: 'Payment failed' };
-            }
-
-            // Remove the user from the payments map
-            const order = this.orders.find(o => o.orderId === payDto.orderId);
-            if (!order) {
-                return { success: false, message: 'Order not found' };
             }
 
             this.payments.get(order.orderId)?.delete(payDto.userEmail);
