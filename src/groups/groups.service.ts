@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Group, GroupDocument } from '../schemas/group.schema';
 import { UsersService } from '../users/users.service';
+import { UserInteractionService } from '../services/user-interaction.service';
 
 @Injectable()
 export class GroupsService {
@@ -11,6 +12,7 @@ export class GroupsService {
   constructor(
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     private readonly usersService: UsersService,
+    private readonly userInteractionService: UserInteractionService,
   ) {}
 
   async findOne(groupId: string): Promise<GroupDocument> {
@@ -68,6 +70,15 @@ export class GroupsService {
 
     await group.save();
     await this.usersService.updateGroup(userId, groupId);
+
+    // Record interactions between all members of the group
+    this.logger.log(`Recording interactions for group ${groupId} with ${group.members.length} members`);
+    await this.userInteractionService.recordPartyInteraction(group.members);
+    this.logger.log(`Successfully recorded interactions for group ${groupId}`);
+
+    // Log the updated streaks for the new member
+    const userStreaks = await this.userInteractionService.getUserStreaks(userId);
+    this.logger.log(`Updated streaks for user ${userId}:`, userStreaks);
 
     this.logger.log(`User ${userId} joined group ${groupId}`);
     return group;

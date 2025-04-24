@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Menu, MenuDocument } from '../schemas/menu.schema';
 import { InjectConnection } from '@nestjs/mongoose';
+import { UserInteractionService } from '../services/user-interaction.service';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -14,6 +15,7 @@ export class SeedService implements OnModuleInit {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Menu.name) private menuModel: Model<MenuDocument>,
     @InjectConnection() private connection: any,
+    private userInteractionService: UserInteractionService,
   ) {}
 
   async onModuleInit() {
@@ -21,8 +23,9 @@ export class SeedService implements OnModuleInit {
       this.logger.log('Waiting for MongoDB connection...');
       await this.connection;
       this.logger.log('MongoDB connection established, starting seed process...');
-    await this.seedUsers();
-    this.logger.log('Seed process completed');
+      await this.seedUsers();
+      await this.seedMenus();
+      this.logger.log('Seed process completed');
     } catch (error) {
       this.logger.error('Error during seed process:', error);
       throw error;
@@ -36,22 +39,22 @@ export class SeedService implements OnModuleInit {
         {
           name: 'BigMac',
           price: 31.00,
-          imageUrl: '',
+          imageUrl: 'https://example.com/images/bigmac.jpg',
         },
         {
           name: 'McFeast',
           price: 35.00,
-          imageUrl: '',
+          imageUrl: 'https://example.com/images/mcfeast.jpg',
         },
         {
           name: 'McChicken',
           price: 25.00,
-          imageUrl: '',
+          imageUrl: 'https://example.com/images/mcchicken.jpg',
         },
         {
           name: 'McFries',
           price: 20,
-          imageUrl: '',
+          imageUrl: 'https://example.com/images/mcfries.jpg',
         },
       ];
       
@@ -84,39 +87,40 @@ export class SeedService implements OnModuleInit {
       this.logger.log('Starting to seed users...');
       const testUsers = [
         {
-          email: 'test1@example.com',
+          email: 'rodrigo@example.com',
           username: 'rodrigo',
           password: 'rodrigo',
           currency: 1000,
         },
         {
-          email: 'test2@example.com',
+          email: 'mikel@example.com',
           username: 'mikel',
           password: 'mikel',
           currency: 800,
         },
         {
-          email: 'test3@example.com',
+          email: 'evelyn@example.com',
           username: 'evelyn',
           password: 'evelyn',
           currency: 1200,
         },
         {
-          email: 'test4@example.com',
+          email: 'francisco@example.com',
           username: 'francisco',
           password: 'francisco',
           currency: 600,
         },
         {
-          email: 'test5@example.com',
+          email: 'angel@example.com',
           username: 'angel',
           password: 'angel',
           currency: 1500,
         },
-    ];
+      ];
 
-    let createdCount = 0;
-    let existingCount = 0;
+      let createdCount = 0;
+      let existingCount = 0;
+      const createdUserIds: string[] = [];
 
       this.logger.log(`Processing ${testUsers.length} test users...`);
 
@@ -126,23 +130,50 @@ export class SeedService implements OnModuleInit {
           $or: [{ email: user.email }, { username: user.username }],
         });
 
-      if (!existingUser) {
+        if (!existingUser) {
           this.logger.log(`Creating new user ${user.username}...`);
-          // Hash password before creating user
           const hashedPassword = await bcrypt.hash(user.password, 10);
-          await this.userModel.create({
+          const newUser = await this.userModel.create({
             ...user,
             password: hashedPassword,
           });
+          createdUserIds.push(newUser.id);
           this.logger.log(`Created user ${user.username} with ${user.currency} currency`);
-        createdCount++;
-      } else {
+          createdCount++;
+        } else {
+          createdUserIds.push(existingUser.id);
           this.logger.log(`User ${user.username} already exists with ${existingUser.currency} currency`);
-        existingCount++;
+          existingCount++;
+        }
       }
-    }
 
-    this.logger.log(`Seed summary: ${createdCount} users created, ${existingCount} users already existed`);
+      // Create some initial streaks between users
+      if (createdUserIds.length >= 2) {
+        this.logger.log('Creating initial streaks between users...');
+        
+        // Create a party with all users (5 interactions)
+        await this.userInteractionService.recordPartyInteraction(createdUserIds);
+        
+        // Create some smaller group interactions
+        // Rodrigo and Mikel have been in 3 parties together
+        for (let i = 0; i < 2; i++) {
+          await this.userInteractionService.recordPartyInteraction([createdUserIds[0], createdUserIds[1]]);
+        }
+        
+        // Evelyn and Francisco have been in 4 parties together
+        for (let i = 0; i < 3; i++) {
+          await this.userInteractionService.recordPartyInteraction([createdUserIds[2], createdUserIds[3]]);
+        }
+        
+        // Angel has been in 2 parties with Rodrigo
+        for (let i = 0; i < 1; i++) {
+          await this.userInteractionService.recordPartyInteraction([createdUserIds[0], createdUserIds[4]]);
+        }
+        
+        this.logger.log('Initial streaks created successfully');
+      }
+
+      this.logger.log(`Seed summary: ${createdCount} users created, ${existingCount} users already existed`);
     } catch (error) {
       this.logger.error('Error in seedUsers:', error);
       throw error;
