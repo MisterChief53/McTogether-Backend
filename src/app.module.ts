@@ -7,6 +7,7 @@ import { User, UserSchema } from './schemas/user.schema';
 import { Group, GroupSchema } from './schemas/group.schema';
 import { Pet, PetSchema } from './schemas/pet.schema';
 import { Menu, MenuSchema } from './schemas/menu.schema';
+import { UserInteraction, UserInteractionSchema } from './schemas/user-interaction.schema';
 import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
 import { GroupsController } from './groups/groups.controller';
@@ -16,6 +17,7 @@ import { PaymentsService } from './payments/payments.service';
 import { SeedService } from './seed/seed.service';
 import { AuthModule } from './auth/auth.module';
 import { GatewayModule } from './websockets/party.module';
+import { UserInteractionService } from './services/user-interaction.service';
 
 @Module({
   imports: [
@@ -34,11 +36,19 @@ import { GatewayModule } from './websockets/party.module';
       { name: Group.name, schema: GroupSchema },
       { name: Pet.name, schema: PetSchema },
       { name: Menu.name, schema: MenuSchema },
+      { name: UserInteraction.name, schema: UserInteractionSchema },
     ]),
     AuthModule,
     GatewayModule
   ],
   controllers: [AppController, UsersController, GroupsController, PaymentsController],
-  providers: [AppService, UsersService, GroupsService, SeedService, PaymentsService],
+  providers: [
+    AppService, 
+    UsersService, 
+    GroupsService, 
+    SeedService, 
+    PaymentsService,
+    UserInteractionService,
+  ],
 })
 export class AppModule {}

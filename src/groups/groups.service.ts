@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Group, GroupDocument } from '../schemas/group.schema';
 import { UsersService } from '../users/users.service';
+import { UserInteractionService } from '../services/user-interaction.service';
 
 @Injectable()
 export class GroupsService {
@@ -11,6 +12,7 @@ export class GroupsService {
   constructor(
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     private readonly usersService: UsersService,
+    private readonly userInteractionService: UserInteractionService,
   ) {}
 
   async findOne(groupId: string): Promise<GroupDocument> {
@@ -24,19 +26,26 @@ export class GroupsService {
   }
 
   async create(userId: string): Promise<GroupDocument> {
+    this.logger.log(`[Create Group] Starting group creation for user ${userId}`);
     const user = await this.usersService.findOne(userId);
-    this.logger.log(`User found: ${user}`);
+    this.logger.log(`[Create Group] Found user: ${JSON.stringify(user)}`);
+    
     if (user.groupId) {
-      this.logger.warn(`User ${userId} attempted to create group while already in one`);
+      this.logger.warn(`[Create Group] User ${userId} attempted to create group while already in group ${user.groupId}`);
       throw new BadRequestException('User is already in a group');
     }
 
+    this.logger.log(`[Create Group] Creating new group with user ${userId} as first member`);
     const group = await this.groupModel.create({
       members: [userId],
       createdAt: new Date(),
     });
+    this.logger.log(`[Create Group] Group created successfully with ID: ${group.id}`);
 
-    this.usersService.updateGroup(userId, group.id);
+    this.logger.log(`[Create Group] Updating user ${userId} to be in group ${group.id}`);
+    await this.usersService.updateGroup(userId, group.id);
+    this.logger.log(`[Create Group] User group updated successfully`);
+
     return group;
   }
 
@@ -61,6 +70,15 @@ export class GroupsService {
 
     await group.save();
     await this.usersService.updateGroup(userId, groupId);
+
+    // Record interactions between all members of the group
+    this.logger.log(`Recording interactions for group ${groupId} with ${group.members.length} members`);
+    await this.userInteractionService.recordPartyInteraction(group.members);
+    this.logger.log(`Successfully recorded interactions for group ${groupId}`);
+
+    // Log the updated streaks for the new member
+    const userStreaks = await this.userInteractionService.getUserStreaks(userId);
+    this.logger.log(`Updated streaks for user ${userId}:`, userStreaks);
 
     this.logger.log(`User ${userId} joined group ${groupId}`);
     return group;

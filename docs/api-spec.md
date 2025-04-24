@@ -242,6 +242,110 @@ const leaveGroup = async (groupId: string, token: string): Promise<void> => {
 };
 ```
 
+## User Interactions and Streaks
+
+### Get User Streaks
+```typescript
+interface UserStreak {
+  user1: {
+    _id: string;
+    username: string;
+  };
+  user2: {
+    _id: string;
+    username: string;
+  };
+  interactionCount: number;
+  lastInteraction: Date;
+}
+
+// Example request
+const getUserStreaks = async (userId: string, token: string): Promise<UserStreak[]> => {
+  const response = await fetch(`http://localhost:3000/users/${userId}/streaks`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch user streaks');
+  return response.json();
+};
+```
+
+### Get Top Streaks
+```typescript
+interface TopStreaksResponse {
+  streaks: UserStreak[];
+  total: number;
+}
+
+// Example request
+const getTopStreaks = async (limit: number = 10, token: string): Promise<TopStreaksResponse> => {
+  const response = await fetch(`http://localhost:3000/streaks/top?limit=${limit}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch top streaks');
+  return response.json();
+};
+```
+
+## How Streaks Work
+
+The streak system automatically tracks and updates user interactions in the following scenarios:
+
+1. **Group Creation**: When a user creates a group, they start with a streak count of 0 with other users.
+
+2. **Group Joining**: When a user joins a group:
+   - Streaks are automatically recorded between the joining user and all existing group members
+   - The interaction count is incremented for all pairs of users in the group
+   - The lastInteraction timestamp is updated to the current time
+
+3. **Streak Data Structure**:
+   - Each streak record contains two users (user1 and user2)
+   - The interactionCount tracks how many times the users have been in groups together
+   - The lastInteraction timestamp shows when they last interacted
+   - User IDs are always stored in sorted order to avoid duplicate pairs
+
+4. **Example Usage**:
+```typescript
+async function exampleStreakUsage() {
+  try {
+    // Login as a user
+    const loginResponse = await login('user1@example.com', 'password1');
+    const token = loginResponse.token;
+
+    // Get user's streaks
+    const userStreaks = await getUserStreaks(loginResponse.user._id, token);
+    console.log('User streaks:', userStreaks);
+
+    // Get top streaks across all users
+    const topStreaks = await getTopStreaks(5, token);
+    console.log('Top streaks:', topStreaks);
+
+    // When users join groups, streaks are automatically updated
+    // No need to manually record interactions
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+```
+
+5. **Streak Rules**:
+   - Streaks are automatically maintained by the system
+   - Each group interaction increments the streak count
+   - Streaks are bidirectional (user1-user2 is the same as user2-user1)
+   - Streaks persist even if users leave groups
+   - The system maintains a history of all interactions
+
+6. **Performance Considerations**:
+   - Streak data is optimized for quick lookups
+   - User pairs are indexed for efficient querying
+   - Streak updates are performed in bulk when groups change
+
 ## Error Responses
 
 All endpoints may return the following error responses:
