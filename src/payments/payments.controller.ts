@@ -10,6 +10,7 @@ export class PaymentsController {
 
   @Post('make-order')
   async makeOrder(@Body() makeOrderDto: Order) {
+    console.log("payments.controller.ts:makeOrder()")
     return this.paymentsService.processOrder(makeOrderDto);
   }
 
